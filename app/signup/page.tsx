@@ -6,35 +6,22 @@ import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const [noIc, setNoIc] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
 
-    // Daftar ke Supabase Auth
-    const { error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (authError) {
-      toast.error("Gagal daftar akaun ke Supabase Auth.");
-      return;
-    }
-
-    // Simpan ke table users
-    const { error: dbError } = await supabase.from("users").insert([
+    const { error } = await supabase.from("users").insert([
       {
         no_ic: noIc,
-        email,
+        password_hash: password,
         role: "staff",
       },
     ]);
 
-    if (dbError) {
-      toast.error("Gagal simpan data user ke DB.");
+    if (error) {
+      toast.error("Gagal daftar akaun.");
     } else {
       toast.success("Akaun berjaya didaftarkan!");
       router.push("/login");
@@ -54,13 +41,7 @@ export default function SignupPage() {
           value={noIc}
           onChange={(e) => setNoIc(e.target.value)}
           className="border rounded w-full p-2"
-        />
-        <input
-          type="email"
-          placeholder="Email Sebenar"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border rounded w-full p-2"
+          required
         />
         <input
           type="password"
@@ -68,6 +49,7 @@ export default function SignupPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="border rounded w-full p-2"
+          required
         />
         <button
           type="submit"
