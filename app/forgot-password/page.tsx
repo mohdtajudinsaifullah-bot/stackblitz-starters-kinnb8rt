@@ -1,64 +1,72 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
 
 export default function ForgotPasswordPage() {
-  const [noIC, setNoIC] = useState("");
+  const [noIc, setNoIc] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setMessage("");
     setLoading(true);
 
-    // Cari user berdasarkan no_ic
-    const { data, error } = await supabase
-      .from("employees")
-      .select("user_id")
-      .eq("no_ic", noIC)
+    // 1. Cari email berdasarkan IC
+    const { data: user, error: dbError } = await supabase
+      .from("users")
+      .select("email")
+      .eq("no_ic", noIc)
       .maybeSingle();
+
+    if (dbError || !user) {
+      setError("No IC tidak wujud dalam sistem.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Hantar link reset password ke email
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      user.email,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      }
+    );
 
     setLoading(false);
 
-    if (error) {
-      setError("Ralat sambungan ke pangkalan data.");
-      return;
+    if (resetError) {
+      setError("Gagal hantar pautan reset password.");
+    } else {
+      setMessage("Pautan reset password telah dihantar ke email anda.");
     }
-
-    if (!data) {
-      setError("No IC tidak wujud dalam sistem.");
-      return;
-    }
-
-    // Redirect ke reset password page dengan user_id
-    router.push(`/reset-password?user_id=${data.user_id}`);
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen">
+    <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-lg p-6 rounded-lg w-full max-w-md space-y-4"
+        className="bg-white p-6 rounded shadow-md w-full max-w-sm space-y-4"
       >
-        <h1 className="text-2xl font-bold text-center">Lupa Kata Laluan</h1>
+        <h1 className="text-xl font-bold text-center">Lupa Kata Laluan</h1>
         <input
           type="text"
-          value={noIC}
-          onChange={(e) => setNoIC(e.target.value)}
           placeholder="Masukkan No IC"
+          value={noIc}
+          onChange={(e) => setNoIc(e.target.value)}
+          className="border rounded w-full p-2"
           required
-          className="border p-2 w-full rounded"
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
+        {message && <p className="text-green-600 text-sm">{message}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white w-full p-2 rounded"
         >
-          {loading ? "Mencari..." : "Seterusnya"}
+          {loading ? "Memproses..." : "Hantar Pautan"}
         </button>
       </form>
     </div>

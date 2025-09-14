@@ -1,72 +1,80 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [noIC, setNoIC] = useState("");
+  const [noIc, setNoIc] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    // Cuba login guna Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: noIC, // Pastikan noIC memang simpan dalam email semasa daftar
+    // 1. Cari email berdasarkan IC
+    const { data: user, error: dbError } = await supabase
+      .from("users")
+      .select("email")
+      .eq("no_ic", noIc)
+      .maybeSingle();
+
+    if (dbError || !user) {
+      setError("No IC tidak dijumpai.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Login guna email + password ke Supabase Auth
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email,
       password,
     });
 
-    if (error) {
-      setError(error.message);
+    setLoading(false);
+
+    if (authError) {
+      setError("Kata laluan tidak sah.");
     } else {
-      // ✅ Redirect selepas login berjaya
-      router.push("/sejarah"); // tukar ke "/form" kalau nak bawa user ke borang
+      router.push("/sejarah"); // redirect ke halaman sejarah
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Log Masuk</h2>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            type="text"
-            placeholder="No IC"
-            value={noIC}
-            onChange={(e) => setNoIC(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="password"
-            placeholder="Kata Laluan"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            Log Masuk
-          </button>
-        </form>
-
-        <div className="flex justify-between mt-4 text-sm">
-          <a href="/forgot-password" className="text-blue-500 hover:underline">
-            Lupa Kata Laluan?
-          </a>
-          <a href="/signup" className="text-blue-500 hover:underline">
-            Daftar Akaun Baru
-          </a>
-        </div>
-      </div>
+    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-6 rounded shadow-md w-full max-w-sm space-y-4"
+      >
+        <h1 className="text-xl font-bold text-center">Log Masuk</h1>
+        <input
+          type="text"
+          placeholder="No IC"
+          value={noIc}
+          onChange={(e) => setNoIc(e.target.value)}
+          className="border rounded w-full p-2"
+          required
+        />
+        <input
+          type="password"
+          placeholder="Kata Laluan"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="border rounded w-full p-2"
+          required
+        />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 text-white w-full p-2 rounded"
+        >
+          {loading ? "Memproses..." : "Log Masuk"}
+        </button>
+      </form>
     </div>
   );
 }
