@@ -1,9 +1,9 @@
 "use client";
+
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import Link from "next/link";
 
 export default function LoginPage() {
   const [noIc, setNoIc] = useState("");
@@ -11,34 +11,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("id, no_ic, password_hash")
-      .eq("no_ic", noIc)
-      .maybeSingle();
+    // login guna dummy email + password
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: `${noIc}@dummy.local`,
+      password,
+    });
 
     setLoading(false);
 
     if (error) {
-      toast.error("Ralat sambungan ke pangkalan data.");
-      return;
+      toast.error("No IC atau kata laluan salah.");
+    } else {
+      toast.success("Berjaya log masuk!");
+      router.push("/dashboard"); // ✅ Redirect ke dashboard terus
     }
-    if (!user) {
-      toast.error("No IC tidak wujud dalam sistem.");
-      return;
-    }
-    if (user.password_hash !== password) {
-      toast.error("Kata laluan salah.");
-      return;
-    }
-
-    toast.success("Berjaya log masuk!");
-    router.push("/profile");
-  };
+  }
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -47,6 +38,7 @@ export default function LoginPage() {
         className="bg-white p-6 rounded shadow-md w-full max-w-sm space-y-4"
       >
         <h1 className="text-xl font-bold text-center">Log Masuk</h1>
+
         <input
           type="text"
           placeholder="No IC"
@@ -55,6 +47,7 @@ export default function LoginPage() {
           className="border rounded w-full p-2"
           required
         />
+
         <input
           type="password"
           placeholder="Kata Laluan"
@@ -63,6 +56,7 @@ export default function LoginPage() {
           className="border rounded w-full p-2"
           required
         />
+
         <button
           type="submit"
           disabled={loading}
@@ -71,13 +65,13 @@ export default function LoginPage() {
           {loading ? "Sedang log masuk..." : "Log Masuk"}
         </button>
 
-        <div className="flex justify-between text-sm text-blue-600">
-          <Link href="/forgot-password" className="hover:underline">
+        <div className="flex justify-between text-sm">
+          <a href="/forgot-password" className="text-blue-600 hover:underline">
             Lupa Kata Laluan?
-          </Link>
-          <Link href="/signup" className="hover:underline">
-            Daftar Akaun Baru
-          </Link>
+          </a>
+          <a href="/signup" className="text-blue-600 hover:underline">
+            Daftar Akaun
+          </a>
         </div>
       </form>
     </div>

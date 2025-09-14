@@ -1,30 +1,34 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
 export async function middleware(req: NextRequest) {
+  // Buat Supabase client
   const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-  // connect Supabase
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Semak status user
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  // semak session user
-  const { data } = await supabase.auth.getSession();
-  const isLoggedIn = !!data.session;
+  // Senarai halaman yang perlukan login
+  const protectedRoutes = ["/dashboard", "/sejarah", "/kursus"];
 
-  const protectedRoutes = ["/profile", "/sejarah", "/kemaskini"];
-
+  // Kalau user tak log masuk & cuba buka protected route
   if (protectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route))) {
-    if (!isLoggedIn) {
+    if (!session) {
       const redirectUrl = req.nextUrl.clone();
       redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("redirectedFrom", req.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);
     }
   }
 
   return res;
 }
+
+// Tentukan halaman yang akan trigger middleware ini
+export const config = {
+  matcher: ["/dashboard/:path*", "/sejarah/:path*", "/kursus/:path*"],
+};

@@ -1,77 +1,133 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+interface Sejarah {
+  id: string;
+  jawatan: string;
+  lokasi: string;
+  tarikh_lantikan: string;
+  tarikh_lapor_diri: string;
+}
 
 export default function SejarahPage() {
-  const [records, setRecords] = useState<any[]>([]);
+  const [data, setData] = useState<Sejarah[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
+      setLoading(true);
+      setError("");
+
+      // Dapatkan user semasa
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setError("Sila log masuk untuk lihat maklumat sejarah perkhidmatan.");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch sejarah_perkhidmatan ikut user_id
       const { data, error } = await supabase
         .from("sejarah_perkhidmatan")
         .select("*")
-        .order("tarikh_mula", { ascending: true });
+        .eq("user_id", user.id)
+        .order("tarikh_lantikan", { ascending: true });
 
-      if (error) console.error("Fetch error:", error);
-      else setRecords(data || []);
+      if (error) {
+        setError("Ralat memuatkan data.");
+      } else {
+        setData(data || []);
+      }
+
       setLoading(false);
-    }
+    };
 
     fetchData();
   }, []);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-600 animate-pulse">Memuatkan data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Sejarah Perkhidmatan</h1>
-
-      {/* 🔹 Butang tambah rekod baru */}
-      <div className="mb-4">
-        <Link
-          href="/sejarah/tambah"
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Sejarah Perkhidmatan</h1>
+        <button
+          onClick={() => router.push("/sejarah/kemaskini?mode=add")}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
         >
           + Tambah Rekod Baru
-        </Link>
+        </button>
       </div>
 
-      {records.length === 0 ? (
-        <p>Tiada rekod ditemui.</p>
+      {data.length === 0 ? (
+        <p className="text-gray-500 text-center">
+          Tiada rekod sejarah perkhidmatan.
+        </p>
       ) : (
-        <table className="table-auto border-collapse border border-gray-400 w-full">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border px-4 py-2">Jawatan</th>
-              <th className="border px-4 py-2">Jabatan</th>
-              <th className="border px-4 py-2">Lokasi</th>
-              <th className="border px-4 py-2">Tarikh Mula</th>
-              <th className="border px-4 py-2">Tarikh Tamat</th>
-              <th className="border px-4 py-2">Tindakan</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((rec) => (
-              <tr key={rec.id}>
-                <td className="border px-4 py-2">{rec.jawatan}</td>
-                <td className="border px-4 py-2">{rec.jabatan}</td>
-                <td className="border px-4 py-2">{rec.lokasi}</td>
-                <td className="border px-4 py-2">{rec.tarikh_mula}</td>
-                <td className="border px-4 py-2">{rec.tarikh_tamat}</td>
-                <td className="border px-4 py-2">
-                  <Link
-                    href={`/sejarah/kemaskini?id=${rec.id}`}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  >
-                    Kemaskini
-                  </Link>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-200 shadow-md rounded">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-4 py-2 text-left">Jawatan</th>
+                <th className="border px-4 py-2 text-left">Lokasi</th>
+                <th className="border px-4 py-2 text-left">Tarikh Lantikan</th>
+                <th className="border px-4 py-2 text-left">Tarikh Lapor Diri</th>
+                <th className="border px-4 py-2 text-center">Tindakan</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50">
+                  <td className="border px-4 py-2">{row.jawatan}</td>
+                  <td className="border px-4 py-2">{row.lokasi}</td>
+                  <td className="border px-4 py-2">
+                    {row.tarikh_lantikan
+                      ? new Date(row.tarikh_lantikan).toLocaleDateString("ms-MY")
+                      : "-"}
+                  </td>
+                  <td className="border px-4 py-2">
+                    {row.tarikh_lapor_diri
+                      ? new Date(row.tarikh_lapor_diri).toLocaleDateString("ms-MY")
+                      : "-"}
+                  </td>
+                  <td className="border px-4 py-2 text-center">
+                    <button
+                      onClick={() =>
+                        router.push(`/sejarah/kemaskini?id=${row.id}`)
+                      }
+                      className="text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

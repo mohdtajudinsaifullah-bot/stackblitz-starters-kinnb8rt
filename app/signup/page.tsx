@@ -21,7 +21,7 @@ export default function SignupPage() {
     ]);
 
     if (error) {
-      toast.error("Gagal daftar akaun.");
+      toast.error("Gagal daftar akaun.Sila hubungi admin sistem");
     } else {
       toast.success("Akaun berjaya didaftarkan!");
       router.push("/login");
