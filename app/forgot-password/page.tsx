@@ -1,37 +1,42 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
 
 export default function ForgotPasswordPage() {
   const [noIC, setNoIC] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [message, setMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setMessage("");
 
-    const { data, error } = await supabase
-      .from("users")
-      .select("id")
+    // Cari email berdasarkan IC
+    const { data: employee, error: empError } = await supabase
+      .from("employees")
+      .select("email")
       .eq("no_ic", noIC)
       .maybeSingle();
 
-    setLoading(false);
-
-    if (error) {
-      setError("Ralat sambungan ke pangkalan data.");
-      return;
-    }
-    if (!data) {
+    if (empError || !employee) {
       setError("No IC tidak wujud dalam sistem.");
       return;
     }
 
-    router.push(`/reset-password?user_id=${data.id}`);
+    // Hantar link reset ke email sebenar
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      employee.email,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      }
+    );
+
+    if (resetError) {
+      setError("Ralat: " + resetError.message);
+    } else {
+      setMessage("Link reset kata laluan dihantar ke emel anda.");
+    }
   };
 
   return (
@@ -50,12 +55,12 @@ export default function ForgotPasswordPage() {
           className="border p-2 w-full rounded"
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
+        {message && <p className="text-green-500 text-sm">{message}</p>}
         <button
           type="submit"
-          disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Mencari..." : "Seterusnya"}
+          Set Semula Kata Laluan
         </button>
       </form>
     </div>

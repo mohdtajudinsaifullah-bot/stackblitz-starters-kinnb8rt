@@ -1,33 +1,40 @@
 "use client";
 import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function ResetPasswordPage() {
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
-  const userId = searchParams.get("user_id");
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setError("");
+
+    const { data: user } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (!user) {
+      setError("Email tidak wujud.");
+      return;
+    }
 
     const { error } = await supabase
       .from("users")
-      .update({ password_hash: password })
-      .eq("id", userId);
-
-    setLoading(false);
+      .update({ password_hash: newPassword })
+      .eq("id", user.id);
 
     if (error) {
-      toast.error("Gagal menetapkan semula kata laluan.");
-    } else {
-      toast.success("Kata laluan berjaya ditetapkan semula!");
-      router.push("/login");
+      setError("Gagal reset kata laluan.");
+      return;
     }
+
+    router.push("/login");
   };
 
   return (
@@ -36,21 +43,29 @@ export default function ResetPasswordPage() {
         onSubmit={handleReset}
         className="bg-white p-6 rounded shadow-md w-full max-w-sm space-y-4"
       >
-        <h1 className="text-xl font-bold text-center">Tetapkan Kata Laluan Baru</h1>
+        <h1 className="text-xl font-bold text-center">Reset Kata Laluan</h1>
         <input
-          type="password"
-          placeholder="Kata Laluan Baru"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="border rounded w-full p-2"
           required
         />
+        <input
+          type="password"
+          placeholder="Kata Laluan Baru"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="border rounded w-full p-2"
+          required
+        />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          disabled={loading}
           className="bg-blue-600 text-white w-full p-2 rounded"
         >
-          {loading ? "Menyimpan..." : "Simpan"}
+          Reset
         </button>
       </form>
     </div>

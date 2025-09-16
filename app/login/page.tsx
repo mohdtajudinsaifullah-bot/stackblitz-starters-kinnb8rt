@@ -1,44 +1,48 @@
 "use client";
-
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginPage() {
   const [noIc, setNoIc] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setError("");
 
-    // login guna dummy email + password
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: `${noIc}@dummy.local`,
-      password,
-    });
+    console.log("🟢 Try login with:", { noIc, password });
 
-    setLoading(false);
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("id, no_ic, password_hash")
+      .eq("no_ic", noIc.trim())
+      .eq("password_hash", password.trim())
+      .maybeSingle();
 
-    if (error) {
-      toast.error("No IC atau kata laluan salah.");
-    } else {
-      toast.success("Berjaya log masuk!");
-      router.push("/dashboard"); // ✅ Redirect ke dashboard terus
+    console.log("🔵 Supabase response:", { user, error });
+
+    if (error || !user) {
+      console.error("❌ Login failed:", error);
+      setError("No IC atau Kata Laluan salah.");
+      return;
     }
-  }
+
+    console.log("✅ Login success, redirecting...", user);
+
+    localStorage.setItem("user_id", user.id);
+    router.push("/dashboard");
+  };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <form
         onSubmit={handleLogin}
         className="bg-white p-6 rounded shadow-md w-full max-w-sm space-y-4"
       >
-        <h1 className="text-xl font-bold text-center">Log Masuk</h1>
-
+        <h1 className="text-2xl font-bold text-center">Log Masuk</h1>
         <input
           type="text"
           placeholder="No IC"
@@ -47,7 +51,6 @@ export default function LoginPage() {
           className="border rounded w-full p-2"
           required
         />
-
         <input
           type="password"
           placeholder="Kata Laluan"
@@ -56,21 +59,19 @@ export default function LoginPage() {
           className="border rounded w-full p-2"
           required
         />
-
+        {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          disabled={loading}
           className="bg-blue-600 text-white w-full p-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Sedang log masuk..." : "Log Masuk"}
+          Log Masuk
         </button>
-
         <div className="flex justify-between text-sm">
-          <a href="/forgot-password" className="text-blue-600 hover:underline">
-            Lupa Kata Laluan?
+          <a href="/signup" className="text-green-600 hover:underline">
+            Daftar Baru
           </a>
-          <a href="/signup" className="text-blue-600 hover:underline">
-            Daftar Akaun
+          <a href="/reset-password" className="text-blue-600 hover:underline">
+            Lupa Password?
           </a>
         </div>
       </form>
