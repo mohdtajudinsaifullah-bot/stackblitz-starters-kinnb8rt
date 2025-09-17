@@ -1,107 +1,73 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 
-type Row = {
-  id: string;
-  nama: string | null;
-  no_ic: string | null;
-  pekerjaan: string | null;
-  jabatan: string | null;
-  lokasi: string | null;
-};
-
-export default function PasanganListPage() {
-  const router = useRouter();
-  const [rows, setRows] = useState<Row[]>([]);
+export default function SenaraiPasangan() {
+  const [pasangan, setPasangan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const employeeId = localStorage.getItem("employee_id");
 
   useEffect(() => {
-    (async () => {
-      try {
-        const employeeId = localStorage.getItem("employee_id") || "";
-        if (!employeeId) throw new Error("ID pekerja tiada.");
-        const { data, error } = await supabase
-          .from("pasangan")
-          .select("id,nama,no_ic,pekerjaan,jabatan,lokasi")
-          .eq("employee_id", employeeId)
-          .order("created_at", { ascending: true });
-        if (error) throw error;
-        setRows(data || []);
-      } catch (e: any) {
-        setErr(e?.message || "Ralat memuatkan data.");
-      } finally {
-        setLoading(false);
+    async function fetchPasangan() {
+      if (!employeeId) return;
+      const { data, error } = await supabase
+        .from("pasangan")
+        .select("id, nama_pasangan, pekerjaan_pasangan, jabatan_pasangan, lokasi_pasangan")
+        .eq("employee_id", employeeId);
+
+      if (error) {
+        console.error("Ralat fetch pasangan:", error.message);
+      } else {
+        setPasangan(data || []);
       }
-    })();
-  }, []);
+      setLoading(false);
+    }
+    fetchPasangan();
+  }, [employeeId]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="max-w-5xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Senarai Pasangan</h1>
-        <button
-          onClick={() => router.push("/pasangan/tambah")}
-          className="rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700"
+        <Link
+          href="/pasangan/tambah"
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
           + Tambah Pasangan
-        </button>
+        </Link>
       </div>
 
-      <button
-        onClick={() => router.push("/dashboard")}
-        className="mb-4 text-indigo-600 hover:underline"
-      >
+      <Link href="/dashboard" className="text-blue-600 hover:underline block mb-4">
         ← Kembali ke Dashboard
-      </button>
+      </Link>
 
-      {err && (
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {err}
-        </div>
-      )}
-
-      <div className="overflow-x-auto rounded-xl border bg-white/70 backdrop-blur">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="border-b bg-slate-50 text-left">
-              <th className="px-3 py-2">Nama</th>
-              <th className="px-3 py-2">No. IC</th>
-              <th className="px-3 py-2">Pekerjaan</th>
-              <th className="px-3 py-2">Jabatan</th>
-              <th className="px-3 py-2">Lokasi</th>
+      {loading ? (
+        <p>Sedang memuat...</p>
+      ) : pasangan.length === 0 ? (
+        <p className="text-gray-500">Tiada maklumat pasangan.</p>
+      ) : (
+        <table className="w-full border-collapse bg-white shadow rounded">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border px-4 py-2 text-left">Nama</th>
+              <th className="border px-4 py-2 text-left">Pekerjaan</th>
+              <th className="border px-4 py-2 text-left">Jabatan</th>
+              <th className="border px-4 py-2 text-left">Lokasi</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-gray-600">
-                  Memuatkan...
-                </td>
+            {pasangan.map((p) => (
+              <tr key={p.id} className="hover:bg-gray-50">
+                <td className="border px-4 py-2">{p.nama_pasangan}</td>
+                <td className="border px-4 py-2">{p.pekerjaan_pasangan}</td>
+                <td className="border px-4 py-2">{p.jabatan_pasangan}</td>
+                <td className="border px-4 py-2">{p.lokasi_pasangan}</td>
               </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-gray-600">
-                  Tiada maklumat pasangan.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
-                <tr key={r.id} className="border-b">
-                  <td className="px-3 py-2">{r.nama || "—"}</td>
-                  <td className="px-3 py-2">{r.no_ic || "—"}</td>
-                  <td className="px-3 py-2">{r.pekerjaan || "—"}</td>
-                  <td className="px-3 py-2">{r.jabatan || "—"}</td>
-                  <td className="px-3 py-2">{r.lokasi || "—"}</td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
-      </div>
+      )}
     </div>
   );
 }
