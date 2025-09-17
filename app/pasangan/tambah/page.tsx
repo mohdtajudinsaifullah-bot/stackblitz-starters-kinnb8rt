@@ -4,124 +4,126 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-const NEGERI = [
-  "Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang",
-  "Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor",
-  "Terengganu",
-  "Wilayah Persekutuan Kuala Lumpur",
-  "Wilayah Persekutuan Labuan",
-  "Wilayah Persekutuan Putrajaya",
-];
-
-export default function PasanganTambahPage() {
+export default function TambahPasangan() {
   const router = useRouter();
-  const [nama, setNama] = useState("");
-  const [noIc, setNoIc] = useState("");
-  const [pekerjaan, setPekerjaan] = useState("");
-  const [jabatan, setJabatan] = useState("");
-  const [lokasi, setLokasi] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    nama_pasangan: "",
+    pekerjaan_pasangan: "",
+    jabatan_pasangan: "",
+    lokasi_pasangan: "",
+  });
+  const [loading, setLoading] = useState(false);
 
-  const onSave = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const employeeId = localStorage.getItem("employee_id") || "";
-    if (!employeeId) {
-      alert("Sesi pengguna tidak sah. Sila log masuk semula.");
-      return;
-    }
-    setSaving(true);
+    setLoading(true);
+
+    const employee_id = localStorage.getItem("employee_id");
+
     const { error } = await supabase.from("pasangan").insert([
       {
-        employee_id: employeeId,
-        nama,
-        no_ic: noIc || null,
-        pekerjaan: pekerjaan || null,
-        jabatan: jabatan || null,
-        lokasi: lokasi || null,
+        employee_id,
+        nama_pasangan: formData.nama_pasangan,
+        pekerjaan_pasangan: formData.pekerjaan_pasangan,
+        jabatan_pasangan: formData.jabatan_pasangan,
+        lokasi_pasangan: formData.lokasi_pasangan,
       },
     ]);
-    setSaving(false);
+
+    setLoading(false);
+
     if (error) {
       alert("Gagal simpan pasangan: " + error.message);
-      return;
+    } else {
+      alert("Berjaya simpan pasangan!");
+      router.push("/pasangan");
     }
-    router.push("/pasangan");
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">Tambah Pasangan</h1>
-
-      <form onSubmit={onSave} className="space-y-5 rounded-xl border bg-white/70 p-6 backdrop-blur">
+    <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-bold mb-4 text-center">Tambah Pasangan</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Nama</label>
+          <label className="block mb-1">Nama Pasangan</label>
           <input
-            className="w-full rounded border px-3 py-2"
-            value={nama}
-            onChange={(e) => setNama(e.target.value)}
+            type="text"
+            name="nama_pasangan"
+            value={formData.nama_pasangan}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded"
             required
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">No. IC</label>
+          <label className="block mb-1">Pekerjaan</label>
           <input
-            className="w-full rounded border px-3 py-2"
-            value={noIc}
-            onChange={(e) => setNoIc(e.target.value)}
+            type="text"
+            name="pekerjaan_pasangan"
+            value={formData.pekerjaan_pasangan}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded"
           />
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Pekerjaan</label>
-            <input
-              className="w-full rounded border px-3 py-2"
-              value={pekerjaan}
-              onChange={(e) => setPekerjaan(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">Jabatan</label>
-            <input
-              className="w-full rounded border px-3 py-2"
-              value={jabatan}
-              onChange={(e) => setJabatan(e.target.value)}
-            />
-          </div>
+        <div>
+          <label className="block mb-1">Jabatan</label>
+          <input
+            type="text"
+            name="jabatan_pasangan"
+            value={formData.jabatan_pasangan}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded"
+          />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Lokasi</label>
+          <label className="block mb-1">Lokasi</label>
           <select
-            className="w-full rounded border px-3 py-2"
-            value={lokasi}
-            onChange={(e) => setLokasi(e.target.value)}
+            name="lokasi_pasangan"
+            value={formData.lokasi_pasangan}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded"
           >
             <option value="">-- Pilih Lokasi --</option>
-            {NEGERI.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
+            <option value="Johor">Johor</option>
+            <option value="Kedah">Kedah</option>
+            <option value="Kelantan">Kelantan</option>
+            <option value="Melaka">Melaka</option>
+            <option value="Negeri Sembilan">Negeri Sembilan</option>
+            <option value="Pahang">Pahang</option>
+            <option value="Perak">Perak</option>
+            <option value="Perlis">Perlis</option>
+            <option value="Pulau Pinang">Pulau Pinang</option>
+            <option value="Sabah">Sabah</option>
+            <option value="Sarawak">Sarawak</option>
+            <option value="Selangor">Selangor</option>
+            <option value="Terengganu">Terengganu</option>
+            <option value="Wilayah Persekutuan Kuala Lumpur">Wilayah Persekutuan Kuala Lumpur</option>
+            <option value="Wilayah Persekutuan Putrajaya">Wilayah Persekutuan Putrajaya</option>
+            <option value="Wilayah Persekutuan Labuan">Wilayah Persekutuan Labuan</option>
           </select>
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex justify-between">
           <button
             type="button"
             onClick={() => router.push("/pasangan")}
-            className="rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
+            className="bg-gray-500 text-white px-4 py-2 rounded"
           >
             Batal
           </button>
           <button
             type="submit"
-            disabled={saving}
-            className="rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:opacity-60"
+            disabled={loading}
+            className="bg-green-600 text-white px-4 py-2 rounded"
           >
-            {saving ? "Menyimpan..." : "Simpan"}
+            {loading ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </form>
