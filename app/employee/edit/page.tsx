@@ -20,7 +20,7 @@ type EmpForm = {
   tarikh_lantikan: string;
   jabatan_sem: string;
   jawatan_sem: string;
-  Lokasi: string;             // Kolum huruf besar
+  lokasi: string;             // Kolum huruf besar
   alamat_semasa: string;
 };
 
@@ -34,7 +34,7 @@ export default function EmployeeEditPage() {
     tarikh_lantikan: "",
     jabatan_sem: "",
     jawatan_sem: "",
-    Lokasi: "",
+    lokasi: "",
     alamat_semasa: "",
   });
   const [saving, setSaving] = useState(false);
@@ -65,7 +65,7 @@ export default function EmployeeEditPage() {
       if (!empId) return;
       const { data, error } = await supabase
         .from("employees")
-        .select('nama,no_ic,email,tarikh_lantikan,jabatan_sem,jawatan_sem,"Lokasi",alamat_semasa')
+        .select('nama,no_ic,email,tarikh_lantikan,jabatan_sem,jawatan_sem,"lokasi",alamat_semasa')
         .eq("id", empId)
         .maybeSingle();
       if (data && !error) {
@@ -76,7 +76,7 @@ export default function EmployeeEditPage() {
           tarikh_lantikan: data.tarikh_lantikan ?? "",
           jabatan_sem: data.jabatan_sem ?? "",
           jawatan_sem: data.jawatan_sem ?? "",
-          Lokasi: (data as any)?.Lokasi ?? "",
+          lokasi: (data as any)?.lokasi ?? "",
           alamat_semasa: data.alamat_semasa ?? "",
         });
       }
@@ -102,8 +102,8 @@ export default function EmployeeEditPage() {
         tarikh_lantikan: form.tarikh_lantikan || null,
         jabatan_sem: form.jabatan_sem || null,
         jawatan_sem: form.jawatan_sem || null,
-        // Kolum 'Lokasi' huruf besar – perlu hantar dengan key yang sama
-        ["Lokasi"]: form.Lokasi || null,
+        // Kolum 'lokasi' huruf besar – perlu hantar dengan key yang sama
+        ["lokasi"]: form.lokasi || null,
         alamat_semasa: form.alamat_semasa || null,
         updated_at: new Date().toISOString(),
       })
@@ -184,15 +184,15 @@ export default function EmployeeEditPage() {
           />
         </div>
 
-        {/* 7. Lokasi */}
+        {/* 7. lokasi */}
         <div>
-          <label className="mb-1 block text-sm font-medium">Lokasi</label>
+          <label className="mb-1 block text-sm font-medium">lokasi</label>
           <select
             className="w-full rounded border px-3 py-2"
-            value={form.Lokasi || ""}
-            onChange={(e) => update("Lokasi", e.target.value)}
+            value={form.lokasi || ""}
+            onChange={(e) => update("lokasi", e.target.value)}
           >
-            <option value="">-- Pilih Lokasi --</option>
+            <option value="">-- Pilih lokasi --</option>
             {NEGERI.map((n) => (
               <option key={n} value={n}>
                 {n}

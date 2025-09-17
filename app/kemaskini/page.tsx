@@ -101,7 +101,7 @@ export default function KemaskiniMaklumat() {
       </div>
 
       <div>
-        <label>Lokasi:</label>
+        <label>lokasi:</label>
         <input
           type="text"
           value={employee.lokasi || ""}
@@ -162,7 +162,7 @@ export default function KemaskiniMaklumat() {
       </div>
 
       <div>
-        <label>Lokasi Pasangan:</label>
+        <label>lokasi Pasangan:</label>
         <input
           type="text"
           value={employee.lokasi_pasangan || ""}

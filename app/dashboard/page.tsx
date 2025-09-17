@@ -14,7 +14,7 @@ type Employee = {
   jabatan_sem: string | null;
   jabatan: string | null;         // fallback kalau jabatan_sem kosong
   alamat_semasa: string | null;
-  Lokasi?: string | null;         // Kolum 'Lokasi' huruf besar di DB
+  lokasi?: string | null;         // Kolum 'lokasi' huruf besar di DB
 };
 
 type Pasangan = {
@@ -45,7 +45,7 @@ export default function Dashboard() {
           employeeRes = await supabase
             .from("employees")
             .select(
-              'id,nama,no_ic,email,tarikh_lantikan,jawatan_sem,jabatan_sem,jabatan,alamat_semasa,"Lokasi"'
+              'id,nama,no_ic,email,tarikh_lantikan,jawatan_sem,jabatan_sem,jabatan,alamat_semasa,"lokasi"'
             )
             .eq("id", employeeIdLS)
             .maybeSingle();
@@ -53,7 +53,7 @@ export default function Dashboard() {
           employeeRes = await supabase
             .from("employees")
             .select(
-              'id,nama,no_ic,email,tarikh_lantikan,jawatan_sem,jabatan_sem,jabatan,alamat_semasa,"Lokasi"'
+              'id,nama,no_ic,email,tarikh_lantikan,jawatan_sem,jabatan_sem,jabatan,alamat_semasa,"lokasi"'
             )
             .eq("user_id", userId)
             .maybeSingle();
@@ -162,7 +162,7 @@ export default function Dashboard() {
             {/* COALESCE: guna jabatan_sem jika ada, kalau kosong guna jabatan */}
             {field("Jabatan Semasa", emp?.jabatan_sem || emp?.jabatan)}
             {field("Jawatan Semasa", emp?.jawatan_sem)}
-            {field("Lokasi", (emp as any)?.Lokasi ?? null)}
+            {field("lokasi", (emp as any)?.lokasi ?? null)}
             {field("Alamat Semasa", emp?.alamat_semasa)}
           </div>
         </div>
@@ -224,7 +224,7 @@ export default function Dashboard() {
                   <th className="px-3 py-2">No. IC</th>
                   <th className="px-3 py-2">Pekerjaan</th>
                   <th className="px-3 py-2">Jabatan</th>
-                  <th className="px-3 py-2">Lokasi</th>
+                  <th className="px-3 py-2">lokasi</th>
                 </tr>
               </thead>
               <tbody>
