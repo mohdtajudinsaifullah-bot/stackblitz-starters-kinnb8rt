@@ -1,94 +1,132 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 export default function TambahKursusPage() {
-  const [nama, setNama] = useState("");
-  const [lokasi, setLokasi] = useState("");
-  const [tarikhMula, setTarikhMula] = useState("");
-  const [tarikhTamat, setTarikhTamat] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    nama_kursus: "",
+    anjuran: "",
+    lokasi: "",
+    tarikh_mula: "",
+    tarikh_tamat: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     const userId = localStorage.getItem("user_id");
-    if (!userId) {
-      setError("Sila log masuk dahulu.");
-      setLoading(false);
-      return;
-    }
+    if (!userId) return;
 
     const { error } = await supabase.from("kursus").insert([
       {
         user_id: userId,
-        nama,
-        lokasi,
-        tarikh_mula: tarikhMula,
-        tarikh_tamat: tarikhTamat || null,
+        ...formData,
       },
     ]);
 
     setLoading(false);
 
     if (error) {
-      setError("Gagal menambah kursus.");
+      alert("Gagal simpan kursus: " + error.message);
     } else {
       router.push("/kursus");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-md space-y-4"
+        className="bg-white p-6 rounded-lg shadow-lg space-y-4 w-full max-w-lg"
       >
-        <h1 className="text-xl font-bold text-center">+ Tambah Kursus</h1>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <h1 className="text-xl font-bold text-center">Tambah Kursus</h1>
+
         <input
           type="text"
+          name="nama_kursus"
           placeholder="Nama Kursus"
-          value={nama}
-          onChange={(e) => setNama(e.target.value)}
-          className="border rounded w-full p-2"
+          value={formData.nama_kursus}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
           required
         />
+
         <input
           type="text"
-          placeholder="Lokasi"
-          value={lokasi}
-          onChange={(e) => setLokasi(e.target.value)}
-          className="border rounded w-full p-2"
+          name="anjuran"
+          placeholder="Anjuran"
+          value={formData.anjuran}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
         />
-        <div className="flex gap-2">
-          <input
-            type="date"
-            value={tarikhMula}
-            onChange={(e) => setTarikhMula(e.target.value)}
-            className="border rounded w-full p-2"
-            required
-          />
-          <input
-            type="date"
-            value={tarikhTamat}
-            onChange={(e) => setTarikhTamat(e.target.value)}
-            className="border rounded w-full p-2"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white w-full p-2 rounded hover:bg-blue-700"
+
+        <select
+          name="lokasi"
+          value={formData.lokasi}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+          required
         >
-          {loading ? "Menyimpan..." : "Simpan Kursus"}
-        </button>
+          <option value="">Pilih Negeri</option>
+          <option>Wilayah Persekutuan Kuala Lumpur</option>
+          <option>Wilayah Persekutuan Labuan</option>
+          <option>Wilayah Persekutuan Putrajaya</option>
+          <option>Johor</option>
+          <option>Kedah</option>
+          <option>Kelantan</option>
+          <option>Melaka</option>
+          <option>Negeri Sembilan</option>
+          <option>Pahang</option>
+          <option>Perak</option>
+          <option>Perlis</option>
+          <option>Pulau Pinang</option>
+          <option>Sabah</option>
+          <option>Sarawak</option>
+          <option>Selangor</option>
+          <option>Terengganu</option>
+        </select>
+
+        <input
+          type="date"
+          name="tarikh_mula"
+          value={formData.tarikh_mula}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+          required
+        />
+
+        <input
+          type="date"
+          name="tarikh_tamat"
+          value={formData.tarikh_tamat}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+        />
+
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/kursus")}
+            className="bg-gray-400 text-white px-4 py-2 rounded"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            {loading ? "Menyimpan..." : "Simpan"}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -4,26 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
-interface Sejarah {
-  id: string;
-  jawatan: string;
-  lokasi: string;
-  tarikh_mula: string;
-  tarikh_tamat: string | null;
-  created_at: string;
-}
-
-export default function SejarahPage() {
-  const [sejarah, setSejarah] = useState<Sejarah[]>([]);
+export default function SenaraiSejarahPage() {
+  const [sejarah, setSejarah] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchSejarah = async () => {
-      setLoading(true);
-      const userId = localStorage.getItem("user_id");
-      if (!userId) {
-        setError("Sila log masuk dahulu.");
+      const employee_id = localStorage.getItem("employee_id");
+      if (!employee_id) {
         setLoading(false);
         return;
       }
@@ -31,11 +19,11 @@ export default function SejarahPage() {
       const { data, error } = await supabase
         .from("sejarah_perkhidmatan")
         .select("*")
-        .eq("user_id", userId)
-        .order("tarikh_mula", { ascending: false });
+        .eq("employee_id", employee_id)
+        .order("tarikh_lapor_diri", { ascending: false });
 
       if (error) {
-        setError("Gagal memuatkan sejarah perkhidmatan.");
+        console.error("Error fetch sejarah:", error);
       } else {
         setSejarah(data || []);
       }
@@ -45,74 +33,62 @@ export default function SejarahPage() {
     fetchSejarah();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Anda pasti mahu padam rekod ini?")) return;
-
-    const { error } = await supabase.from("sejarah_perkhidmatan").delete().eq("id", id);
-
-    if (error) {
-      alert("Gagal memadam rekod.");
-    } else {
-      setSejarah((prev) => prev.filter((s) => s.id !== id));
-    }
-  };
-
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">🏢 Sejarah Perkhidmatan</h1>
+        <h1 className="text-xl font-bold text-blue-700">Sejarah Perkhidmatan</h1>
         <Link
-          href="/sejarah/tambah"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          href="/sejarah/form"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          + Tambah Rekod
+          + Tambah Sejarah
         </Link>
       </div>
 
-      {loading && <p>Memuatkan data...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-
-      {!loading && sejarah.length === 0 && (
-        <p className="text-gray-500">Tiada rekod sejarah perkhidmatan.</p>
-      )}
-
-      {!loading && sejarah.length > 0 && (
-        <div className="overflow-x-auto shadow rounded-lg">
-          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="px-4 py-2 border">#</th>
-                <th className="px-4 py-2 border">Jawatan</th>
-                <th className="px-4 py-2 border">Lokasi</th>
-                <th className="px-4 py-2 border">Tempoh</th>
-                <th className="px-4 py-2 border">Tindakan</th>
+      {loading ? (
+        <p>Loading...</p>
+      ) : sejarah.length === 0 ? (
+        <p className="text-gray-500">Tiada rekod</p>
+      ) : (
+        <div className="overflow-x-auto rounded border">
+          <table className="w-full border-collapse bg-white shadow">
+            <thead>
+              <tr className="bg-gray-100 text-left text-sm font-semibold text-gray-700">
+                <th className="p-3 border">Jabatan</th>
+                <th className="p-3 border">Jawatan</th>
+                <th className="p-3 border">Lokasi</th>
+                <th className="p-3 border">Tarikh Lapor Diri</th>
+                <th className="p-3 border">Tarikh Berpindah</th>
+                <th className="p-3 border">Tempoh</th>
+                <th className="p-3 border">Tindakan</th>
               </tr>
             </thead>
             <tbody>
-              {sejarah.map((s, index) => {
-                const tempoh = s.tarikh_tamat
-                  ? `${s.tarikh_mula} → ${s.tarikh_tamat}`
-                  : `${s.tarikh_mula} → Kini`;
+              {sejarah.map((item) => {
+                const mula = new Date(item.tarikh_lapor_diri);
+                const tamat = item.tarikh_berpindah
+                  ? new Date(item.tarikh_berpindah)
+                  : new Date();
+                const years = tamat.getFullYear() - mula.getFullYear();
+                const months =
+                  tamat.getMonth() - mula.getMonth() + (years * 12);
+                const tempoh = `${Math.floor(months / 12)} thn ${months % 12} bln`;
 
                 return (
-                  <tr key={s.id} className="text-center hover:bg-gray-50">
-                    <td className="px-4 py-2 border">{index + 1}</td>
-                    <td className="px-4 py-2 border font-medium">{s.jawatan}</td>
-                    <td className="px-4 py-2 border">{s.lokasi}</td>
-                    <td className="px-4 py-2 border">{tempoh}</td>
-                    <td className="px-4 py-2 border flex gap-2 justify-center">
+                  <tr key={item.id} className="border-t text-sm">
+                    <td className="p-3 border">{item.jabatan}</td>
+                    <td className="p-3 border">{item.jawatan}</td>
+                    <td className="p-3 border">{item.lokasi}</td>
+                    <td className="p-3 border">{item.tarikh_lapor_diri}</td>
+                    <td className="p-3 border">{item.tarikh_berpindah || "-"}</td>
+                    <td className="p-3 border">{tempoh}</td>
+                    <td className="p-3 border">
                       <Link
-                        href={`/sejarah/kemaskini/${s.id}`}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                        href={`/sejarah/form?id=${item.id}`}
+                        className="text-blue-600 hover:underline"
                       >
-                        Edit
+                        Kemaskini
                       </Link>
-                      <button
-                        onClick={() => handleDelete(s.id)}
-                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                      >
-                        Padam
-                      </button>
                     </td>
                   </tr>
                 );
@@ -121,6 +97,12 @@ export default function SejarahPage() {
           </table>
         </div>
       )}
+
+      <div className="mt-4">
+        <Link href="/dashboard" className="text-blue-600 hover:underline">
+          ← Kembali ke Dashboard
+        </Link>
+      </div>
     </div>
   );
 }

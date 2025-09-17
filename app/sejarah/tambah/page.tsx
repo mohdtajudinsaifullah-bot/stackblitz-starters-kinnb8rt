@@ -1,95 +1,138 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
-export default function TambahSejarahPage() {
-  const [tempat, setTempat] = useState("");
+const negeriList = [
+  "Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan",
+  "Pahang", "Perak", "Perlis", "Pulau Pinang", "Sabah",
+  "Sarawak", "Selangor", "Terengganu",
+  "Wilayah Persekutuan Kuala Lumpur",
+  "Wilayah Persekutuan Putrajaya",
+  "Wilayah Persekutuan Labuan",
+];
+
+export default function TambahSejarah() {
   const [jawatan, setJawatan] = useState("");
-  const [tarikhMula, setTarikhMula] = useState("");
-  const [tarikhTamat, setTarikhTamat] = useState("");
-  const [error, setError] = useState("");
+  const [jabatan, setJabatan] = useState("");
+  const [lokasi, setLokasi] = useState("");
+  const [tarikhLapor, setTarikhLapor] = useState("");
+  const [tarikhPindah, setTarikhPindah] = useState("");
   const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
-    const userId = localStorage.getItem("user_id");
-    if (!userId) {
-      setError("Sila log masuk dahulu.");
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      alert("Sesi pengguna tidak sah.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!employee) {
+      alert("Maklumat employee tidak dijumpai.");
       setLoading(false);
       return;
     }
 
     const { error } = await supabase.from("sejarah_perkhidmatan").insert([
       {
-        user_id: userId,
-        tempat,
+        employee_id: employee.id,
         jawatan,
-        tarikh_mula: tarikhMula,
-        tarikh_tamat: tarikhTamat || null,
+        jabatan,
+        lokasi,
+        tarikh_lapor_diri: tarikhLapor || null,
+        tarikh_berpindah: tarikhPindah || null,
       },
     ]);
 
     setLoading(false);
 
     if (error) {
-      setError("Gagal menambah rekod.");
+      alert("Gagal simpan rekod: " + error.message);
     } else {
+      alert("Rekod berjaya disimpan!");
       router.push("/sejarah");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-md space-y-4"
-      >
-        <h1 className="text-xl font-bold text-center">+ Tambah Sejarah Perkhidmatan</h1>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+    <div className="max-w-lg mx-auto p-6 bg-white shadow rounded-lg">
+      <h2 className="text-xl font-bold mb-4 text-blue-600">
+        Tambah Sejarah Perkhidmatan
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
-          placeholder="Tempat"
-          value={tempat}
-          onChange={(e) => setTempat(e.target.value)}
-          className="border rounded w-full p-2"
-          required
+          placeholder="Jabatan"
+          value={jabatan}
+          onChange={(e) => setJabatan(e.target.value)}
+          className="w-full border p-2 rounded"
         />
         <input
           type="text"
           placeholder="Jawatan"
           value={jawatan}
           onChange={(e) => setJawatan(e.target.value)}
-          className="border rounded w-full p-2"
-          required
+          className="w-full border p-2 rounded"
         />
-        <div className="flex gap-2">
+        <select
+          value={lokasi}
+          onChange={(e) => setLokasi(e.target.value)}
+          className="w-full border p-2 rounded"
+        >
+          <option value="">-- Pilih Negeri --</option>
+          {negeriList.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+        <div>
+          <label className="block text-sm font-medium">Tarikh Lapor Diri</label>
           <input
             type="date"
-            value={tarikhMula}
-            onChange={(e) => setTarikhMula(e.target.value)}
-            className="border rounded w-full p-2"
-            required
-          />
-          <input
-            type="date"
-            value={tarikhTamat}
-            onChange={(e) => setTarikhTamat(e.target.value)}
-            className="border rounded w-full p-2"
+            value={tarikhLapor}
+            onChange={(e) => setTarikhLapor(e.target.value)}
+            className="w-full border p-2 rounded"
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white w-full p-2 rounded hover:bg-blue-700"
-        >
-          {loading ? "Menyimpan..." : "Simpan Rekod"}
-        </button>
+        <div>
+          <label className="block text-sm font-medium">Tarikh Berpindah</label>
+          <input
+            type="date"
+            value={tarikhPindah}
+            onChange={(e) => setTarikhPindah(e.target.value)}
+            className="w-full border p-2 rounded"
+          />
+        </div>
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/sejarah")}
+            className="px-4 py-2 bg-gray-500 text-white rounded"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 bg-green-600 text-white rounded"
+          >
+            {loading ? "Menyimpan..." : "Simpan"}
+          </button>
+        </div>
       </form>
     </div>
   );

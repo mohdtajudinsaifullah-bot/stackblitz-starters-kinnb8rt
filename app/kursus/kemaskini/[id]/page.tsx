@@ -1,110 +1,131 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useParams, useRouter } from "next/navigation";
 
 export default function KemaskiniKursusPage() {
-  const { id } = useParams();
   const router = useRouter();
-  const [nama, setNama] = useState("");
-  const [lokasi, setLokasi] = useState("");
-  const [tarikhMula, setTarikhMula] = useState("");
-  const [tarikhTamat, setTarikhTamat] = useState("");
-  const [error, setError] = useState("");
+  const params = useParams();
+  const id = params?.id as string;
+
+  const [formData, setFormData] = useState({
+    nama_kursus: "",
+    anjuran: "",
+    lokasi: "",
+    tarikh_mula: "",
+    tarikh_tamat: "",
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-
-    (async () => {
-      const { data, error } = await supabase
-        .from("kursus")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-
-      if (error || !data) {
-        setError("Rekod tidak dijumpai.");
-        return;
-      }
-
-      setNama(data.nama);
-      setLokasi(data.lokasi);
-      setTarikhMula(data.tarikh_mula);
-      setTarikhTamat(data.tarikh_tamat || "");
-    })();
+    if (id) {
+      supabase.from("kursus").select("*").eq("id", id).single().then(({ data }) => {
+        if (data) setFormData(data);
+      });
+    }
   }, [id]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
-    const { error } = await supabase
-      .from("kursus")
-      .update({
-        nama,
-        lokasi,
-        tarikh_mula: tarikhMula,
-        tarikh_tamat: tarikhTamat || null,
-      })
-      .eq("id", id);
+    const { error } = await supabase.from("kursus").update(formData).eq("id", id);
 
     setLoading(false);
 
     if (error) {
-      setError("Gagal mengemaskini kursus.");
+      alert("Gagal kemaskini kursus: " + error.message);
     } else {
       router.push("/kursus");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <form
-        onSubmit={handleUpdate}
-        className="bg-white p-6 rounded shadow-md w-full max-w-md space-y-4"
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-lg shadow-lg space-y-4 w-full max-w-lg"
       >
-        <h1 className="text-xl font-bold text-center">✏️ Kemaskini Kursus</h1>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <h1 className="text-xl font-bold text-center">Kemaskini Kursus</h1>
+
         <input
           type="text"
-          placeholder="Nama Kursus"
-          value={nama}
-          onChange={(e) => setNama(e.target.value)}
-          className="border rounded w-full p-2"
+          name="nama_kursus"
+          value={formData.nama_kursus}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
           required
         />
+
         <input
           type="text"
-          placeholder="Lokasi"
-          value={lokasi}
-          onChange={(e) => setLokasi(e.target.value)}
-          className="border rounded w-full p-2"
+          name="anjuran"
+          value={formData.anjuran || ""}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
         />
-        <div className="flex gap-2">
-          <input
-            type="date"
-            value={tarikhMula}
-            onChange={(e) => setTarikhMula(e.target.value)}
-            className="border rounded w-full p-2"
-            required
-          />
-          <input
-            type="date"
-            value={tarikhTamat}
-            onChange={(e) => setTarikhTamat(e.target.value)}
-            className="border rounded w-full p-2"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-yellow-600 text-white w-full p-2 rounded hover:bg-yellow-700"
+
+        <select
+          name="lokasi"
+          value={formData.lokasi}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+          required
         >
-          {loading ? "Mengemaskini..." : "Kemaskini Kursus"}
-        </button>
+          <option value="">Pilih Negeri</option>
+          <option>Wilayah Persekutuan Kuala Lumpur</option>
+          <option>Wilayah Persekutuan Labuan</option>
+          <option>Wilayah Persekutuan Putrajaya</option>
+          <option>Johor</option>
+          <option>Kedah</option>
+          <option>Kelantan</option>
+          <option>Melaka</option>
+          <option>Negeri Sembilan</option>
+          <option>Pahang</option>
+          <option>Perak</option>
+          <option>Perlis</option>
+          <option>Pulau Pinang</option>
+          <option>Sabah</option>
+          <option>Sarawak</option>
+          <option>Selangor</option>
+          <option>Terengganu</option>
+        </select>
+
+        <input
+          type="date"
+          name="tarikh_mula"
+          value={formData.tarikh_mula || ""}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+        />
+        <input
+          type="date"
+          name="tarikh_tamat"
+          value={formData.tarikh_tamat || ""}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+        />
+
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/kursus")}
+            className="bg-gray-400 text-white px-4 py-2 rounded"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            {loading ? "Mengemaskini..." : "Simpan"}
+          </button>
+        </div>
       </form>
     </div>
   );

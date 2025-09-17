@@ -13,27 +13,43 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    console.log("🟢 Try login with:", { noIc, password });
+    try {
+      // ✅ Semak user berdasarkan No IC & Password
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .select("id, no_ic, password_hash")
+        .eq("no_ic", noIc)
+        .eq("password_hash", password)
+        .maybeSingle();
 
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("id, no_ic, password_hash")
-      .eq("no_ic", noIc.trim())
-      .eq("password_hash", password.trim())
-      .maybeSingle();
+      if (userError || !user) {
+        setError("No IC atau Kata Laluan salah.");
+        return;
+      }
 
-    console.log("🔵 Supabase response:", { user, error });
+      // ✅ Dapatkan employee_id berdasarkan user.id
+      const { data: employee, error: empError } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (error || !user) {
-      console.error("❌ Login failed:", error);
-      setError("No IC atau Kata Laluan salah.");
-      return;
+      if (empError) {
+        setError("Ralat mendapatkan maklumat pekerja.");
+        return;
+      }
+
+      if (employee) {
+        // ✅ Simpan employee_id ke localStorage (boleh dipakai semua page)
+        localStorage.setItem("employee_id", employee.id);
+      }
+
+      // ✅ Redirect ke dashboard
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Ralat tidak dijangka semasa log masuk.");
     }
-
-    console.log("✅ Login success, redirecting...", user);
-
-    localStorage.setItem("user_id", user.id);
-    router.push("/dashboard");
   };
 
   return (
@@ -43,6 +59,8 @@ export default function LoginPage() {
         className="bg-white p-6 rounded shadow-md w-full max-w-sm space-y-4"
       >
         <h1 className="text-2xl font-bold text-center">Log Masuk</h1>
+
+        {/* Input No IC */}
         <input
           type="text"
           placeholder="No IC"
@@ -51,6 +69,8 @@ export default function LoginPage() {
           className="border rounded w-full p-2"
           required
         />
+
+        {/* Input Password */}
         <input
           type="password"
           placeholder="Kata Laluan"
@@ -59,13 +79,19 @@ export default function LoginPage() {
           className="border rounded w-full p-2"
           required
         />
+
+        {/* Error Message */}
         {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        {/* Butang Log Masuk */}
         <button
           type="submit"
           className="bg-blue-600 text-white w-full p-2 rounded hover:bg-blue-700"
         >
           Log Masuk
         </button>
+
+        {/* Link Daftar & Lupa Password */}
         <div className="flex justify-between text-sm">
           <a href="/signup" className="text-green-600 hover:underline">
             Daftar Baru
