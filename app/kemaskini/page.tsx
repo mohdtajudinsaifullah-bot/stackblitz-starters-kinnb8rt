@@ -3,183 +3,168 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
-export default function KemaskiniMaklumat() {
+export default function KemaskiniProfil() {
   const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
+  const employeeId = localStorage.getItem("employee_id");
+
   useEffect(() => {
-    async function fetchData() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    async function fetchEmployee() {
+      if (!employeeId) return;
+      const { data, error } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("id", employeeId)
+        .single();
 
-      if (user) {
-        const { data, error } = await supabase
-          .from("employees")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-
-        if (error) console.error(error);
+      if (error) {
+        console.error("Ralat fetch employee:", error.message);
+      } else {
         setEmployee(data);
-        setLoading(false);
       }
+      setLoading(false);
     }
-    fetchData();
-  }, []);
+    fetchEmployee();
+  }, [employeeId]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmployee({ ...employee, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
 
     const { error } = await supabase
       .from("employees")
       .update({
-        alamat_tempat_tinggal: employee.alamat_tempat_tinggal,
+        nama: employee.nama,
+        no_ic: employee.no_ic,
+        email: employee.email,
+        tarikh_lantikan: employee.tarikh_lantikan,
+        jabatan_sem: employee.jabatan_sem,
         jawatan_sem: employee.jawatan_sem,
-        jabatan: employee.jabatan,
         lokasi: employee.lokasi,
-        tarikh_lapor_diri: employee.tarikh_lapor_diri,
-        nama_pasangan: employee.nama_pasangan,
-        pekerjaan_pasangan: employee.pekerjaan_pasangan,
-        jabatan_pasangan: employee.jabatan_pasangan,
-        lokasi_pasangan: employee.lokasi_pasangan,
+        alamat_semasa: employee.alamat_semasa,
       })
-      .eq("id", employee.id);
+      .eq("id", employeeId);
+
+    setSaving(false);
 
     if (error) {
-      alert("Gagal kemaskini: " + error.message);
+      alert("Ralat simpan: " + error.message);
     } else {
-      alert("Maklumat berjaya dikemaskini!");
-      router.push("/profile");
+      alert("Profil berjaya dikemaskini!");
+      router.push("/dashboard");
     }
-    setLoading(false);
-  }
+  };
 
-  if (loading) return <p>Loading...</p>;
-  if (!employee) return <p>Tiada data ditemui</p>;
+  if (loading) return <p className="p-6">Sedang memuat...</p>;
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-3">
-      <h1 className="text-xl font-bold mb-4">Kemaskini Maklumat Peribadi</h1>
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded">
+      <h1 className="text-2xl font-bold mb-6">Kemaskini Profil</h1>
 
-      <div>
-        <label>Alamat:</label>
-        <input
-          type="text"
-          value={employee.alamat_tempat_tinggal || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, alamat_tempat_tinggal: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+      <form onSubmit={handleSubmit} className="grid gap-4">
+        <div>
+          <label className="block text-sm font-medium">Nama</label>
+          <input
+            type="text"
+            name="nama"
+            value={employee?.nama || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>Jawatan Semasa:</label>
-        <input
-          type="text"
-          value={employee.jawatan_sem || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, jawatan_sem: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">No. IC</label>
+          <input
+            type="text"
+            name="no_ic"
+            value={employee?.no_ic || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>Jabatan:</label>
-        <input
-          type="text"
-          value={employee.jabatan || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, jabatan: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">E-mel</label>
+          <input
+            type="email"
+            name="email"
+            value={employee?.email || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>lokasi:</label>
-        <input
-          type="text"
-          value={employee.lokasi || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, lokasi: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">Tarikh Lantikan</label>
+          <input
+            type="date"
+            name="tarikh_lantikan"
+            value={employee?.tarikh_lantikan || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>Tarikh Lapor Diri:</label>
-        <input
-          type="date"
-          value={employee.tarikh_lapor_diri || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, tarikh_lapor_diri: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">Jabatan Semasa</label>
+          <input
+            type="text"
+            name="jabatan_sem"
+            value={employee?.jabatan_sem || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <h2 className="font-bold mt-4">Maklumat Pasangan</h2>
-      <div>
-        <label>Nama Pasangan:</label>
-        <input
-          type="text"
-          value={employee.nama_pasangan || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, nama_pasangan: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">Jawatan Semasa</label>
+          <input
+            type="text"
+            name="jawatan_sem"
+            value={employee?.jawatan_sem || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>Pekerjaan Pasangan:</label>
-        <input
-          type="text"
-          value={employee.pekerjaan_pasangan || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, pekerjaan_pasangan: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">Lokasi</label>
+          <input
+            type="text"
+            name="lokasi"
+            value={employee?.lokasi || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>Jabatan Pasangan:</label>
-        <input
-          type="text"
-          value={employee.jabatan_pasangan || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, jabatan_pasangan: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium">Alamat Semasa</label>
+          <input
+            type="text"
+            name="alamat_semasa"
+            value={employee?.alamat_semasa || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      <div>
-        <label>lokasi Pasangan:</label>
-        <input
-          type="text"
-          value={employee.lokasi_pasangan || ""}
-          onChange={(e) =>
-            setEmployee({ ...employee, lokasi_pasangan: e.target.value })
-          }
-          className="border p-2 w-full"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        {loading ? "Menyimpan..." : "Simpan"}
-      </button>
-    </form>
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          {saving ? "Menyimpan..." : "Simpan"}
+        </button>
+      </form>
+    </div>
   );
 }

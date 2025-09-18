@@ -6,14 +6,17 @@ import Link from "next/link";
 export default function SenaraiPasangan() {
   const [pasangan, setPasangan] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const employeeId = localStorage.getItem("employee_id");
+  const employeeId =
+    typeof window !== "undefined" ? localStorage.getItem("employee_id") : null;
 
   useEffect(() => {
     async function fetchPasangan() {
       if (!employeeId) return;
       const { data, error } = await supabase
         .from("pasangan")
-        .select("id, nama_pasangan, pekerjaan_pasangan, jabatan_pasangan, lokasi_pasangan")
+        .select(
+          "id, nama_pasangan, pekerjaan_pasangan, jabatan_pasangan, lokasi_pasangan"
+        )
         .eq("employee_id", employeeId);
 
       if (error) {
@@ -38,7 +41,10 @@ export default function SenaraiPasangan() {
         </Link>
       </div>
 
-      <Link href="/dashboard" className="text-blue-600 hover:underline block mb-4">
+      <Link
+        href="/dashboard"
+        className="text-blue-600 hover:underline block mb-4"
+      >
         ← Kembali ke Dashboard
       </Link>
 
@@ -59,10 +65,18 @@ export default function SenaraiPasangan() {
           <tbody>
             {pasangan.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
-                <td className="border px-4 py-2">{p.nama_pasangan}</td>
-                <td className="border px-4 py-2">{p.pekerjaan_pasangan}</td>
-                <td className="border px-4 py-2">{p.jabatan_pasangan}</td>
-                <td className="border px-4 py-2">{p.lokasi_pasangan}</td>
+                <td className="border px-4 py-2">
+                  {p.nama_pasangan || "—"}
+                </td>
+                <td className="border px-4 py-2">
+                  {p.pekerjaan_pasangan || "—"}
+                </td>
+                <td className="border px-4 py-2">
+                  {p.jabatan_pasangan || "—"}
+                </td>
+                <td className="border px-4 py-2">
+                  {p.lokasi_pasangan || "—"}
+                </td>
               </tr>
             ))}
           </tbody>
